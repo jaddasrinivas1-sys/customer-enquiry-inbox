@@ -1,0 +1,67 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import {
+  getFirestore,
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  updateDoc,
+  doc
+} from "firebase/firestore";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDfBHjHy8qz8YhOE25BkRyvJ-sDjFmJUrA",
+  authDomain: "enquiry-app-2a450.firebaseapp.com",
+  projectId: "enquiry-app-2a450",
+  storageBucket: "enquiry-app-2a450.firebasestorage.app",
+  messagingSenderId: "221846971750",
+  appId: "1:221846971750:web:ad8b3b14deffa65ea8d4a7"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Get HTML element
+const enquiryList = document.getElementById("enquiryList");
+
+// Query newest enquiries first
+const q = query(
+  collection(db, "enquiries"),
+  orderBy("createdAt", "desc")
+);
+
+// Live updates
+onSnapshot(q, (snapshot) => {
+  enquiryList.innerHTML = "";
+
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <strong>${data.name}</strong> (${data.email})<br>
+      ${data.message}<br>
+      Status: <b>${data.status}</b><br>
+      <button data-id="${docSnap.id}" data-status="Contacted">Contacted</button>
+      <button data-id="${docSnap.id}" data-status="Closed">Closed</button>
+      <hr>
+    `;
+
+    li.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        markStatus(btn.dataset.id, btn.dataset.status);
+      });
+    });
+
+    enquiryList.appendChild(li);
+  });
+});
+
+// Update enquiry status
+async function markStatus(id, newStatus) {
+  const ref = doc(db, "enquiries", id);
+  await updateDoc(ref, { status: newStatus });
+}
